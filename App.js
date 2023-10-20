@@ -9,14 +9,11 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import SignUpScreen from "./components/SignUpScreen";
 
 //firebase
 // const app = initializeApp(firebaseConfig);
-import { database, app, auth } from "./firebaseConfig";
-import { initializeApp } from "firebase/app";
-import firebase from "firebase/app";
-import { ref, set } from "firebase/database";
-import SignUpScreen from "./components/SignUpScreen";
+import { app, auth } from "./firebaseConfig";
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -25,6 +22,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
+import { getDatabase, onValue, ref, set } from "firebase/database";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
@@ -32,6 +30,7 @@ export default function App() {
   const [loginStatus, setLoginStatus] = useState(false);
   const [signUpStatus, setSignUpStatus] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [watchlist, setWatchlist] = useState();
 
   //sign up
   const handleSignUp = (email, password, displayName) => {
@@ -74,6 +73,63 @@ export default function App() {
       });
   };
 
+  const getMovieData = () => {
+    axios
+      .get("http://192.168.1.27:3003/movie")
+      .then((res) => {
+        // console.log(res.data);
+        setMovieData(res.data);
+        if (!movieStatus) {
+          setMovieStatus(true);
+        }
+      })
+      .catch((error) => console.log(error));
+  };
+
+  //add to watchlist
+  const addToWatchlist = () => {
+    if (movieData) {
+      const auth = getAuth();
+      const user = auth.currentUser.uid;
+      const db = getDatabase();
+      const userRef = ref(db, `users/${user}/watchlist`);
+
+      // Read the existing watchlist
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val() || [];
+        if (!data.includes(movieData.original_title)) {
+          data.push(movieData.original_title);
+          set(userRef, data)
+            .then(() => {
+              console.log(
+                `Added ${movieData.original_title} to the watchlist.`
+              );
+            })
+            .catch((error) => {
+              console.error(`Error adding movie to watchlist: ${error}`);
+            });
+        } else {
+          console.log(
+            `${movieData.original_title} is already in the watchlist.`
+          );
+        }
+      });
+    }
+  };
+
+  const showWatchlist = () => {
+    const auth = getAuth();
+    const user = auth.currentUser.uid;
+    const db = getDatabase();
+    const userRef = ref(db, `users/${user}/watchlist`);
+
+    onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      setWatchlist(data);
+    });
+    console.log("hit");
+  };
+
   //animation
   const fadeAnim = new Animated.Value(0);
   const [visible, setVisible] = useState(true);
@@ -96,19 +152,6 @@ export default function App() {
     }, 3000);
     return () => clearTimeout(hideTimeout);
   }, []);
-
-  const getMovieData = () => {
-    axios
-      .get("http://192.168.1.27:3003/movie")
-      .then((res) => {
-        // console.log(res.data);
-        setMovieData(res.data);
-        if (!movieStatus) {
-          setMovieStatus(true);
-        }
-      })
-      .catch((error) => console.log(error));
-  };
 
   const handleX = () => {
     setMovieData();
@@ -134,11 +177,15 @@ export default function App() {
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
-        setIsLoggedIn(false); // Clear the user state
+        setIsLoggedIn(false);
       })
       .catch((error) => {
         console.error("Logout error:", error);
       });
+  };
+
+  const handleWatchBack = () => {
+    setWatchlist();
   };
 
   const getUserInfo = () => {
@@ -206,9 +253,14 @@ export default function App() {
           <TouchableOpacity style={styles.closeButton} onPress={handleX}>
             <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
+          {movieData && (
+            <TouchableOpacity style={styles.button} onPress={addToWatchlist}>
+              <Text style={styles.buttonText}>Add To Watchlist</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
-      {!movieStatus && !visible && isLoggedIn && (
+      {!movieStatus && !visible && isLoggedIn && !watchlist && (
         <View>
           <Text
             style={styles.title}
@@ -219,9 +271,22 @@ export default function App() {
           <TouchableOpacity onPress={getMovieData} style={styles.button}>
             <Text style={styles.buttonText}>Get Movie</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={showWatchlist}>
+            <Text style={styles.buttonText}>Show Watchlist</Text>
+          </TouchableOpacity>
           {/* <TouchableOpacity onPress={getUserInfo}>
             <Text>Get user info</Text>
           </TouchableOpacity> */}
+        </View>
+      )}
+      {watchlist && (
+        <View style={styles.container}>
+          {watchlist.map((movie) => {
+            return <Text style={styles.title}>{movie}</Text>;
+          })}
+          <TouchableOpacity style={styles.button} onPress={handleWatchBack}>
+            <Text style={styles.buttonText}>BACK</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
