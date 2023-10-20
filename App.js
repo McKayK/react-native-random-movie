@@ -10,9 +10,69 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
+//firebase
+// const app = initializeApp(firebaseConfig);
+import { database, app, auth } from "./firebaseConfig";
+import { initializeApp } from "firebase/app";
+import firebase from "firebase/app";
+import { ref, set } from "firebase/database";
+import SignUpScreen from "./components/SignUpScreen";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from "firebase/auth";
+import LoginScreen from "./components/LoginScreen";
+
 export default function App() {
   const [movieData, setMovieData] = useState();
   const [movieStatus, setMovieStatus] = useState(false);
+  const [loginStatus, setLoginStatus] = useState(false);
+  const [signUpStatus, setSignUpStatus] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  //sign up
+  const handleSignUp = (email, password, displayName) => {
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed up
+        const user = userCredential.user;
+
+        updateProfile(auth.currentUser, {
+          displayName: displayName,
+        })
+          .then(() => {
+            console.log("Display name updated");
+          })
+          .catch((error) => {
+            console.log(`Error: ${error}`);
+          });
+
+        console.log(user.uid);
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+
+        console.log(errorCode, errorMessage);
+      });
+    setSignUpStatus(false);
+  };
+  //login
+  const handleLogin = (email, password) => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        console.log(user);
+        console.log(`User logged in: ${user.uid}`);
+        setIsLoggedIn(true);
+      })
+      .catch((error) => {
+        console.log(`Login error: ${error}`);
+      });
+  };
 
   //animation
   const fadeAnim = new Animated.Value(0);
@@ -55,8 +115,70 @@ export default function App() {
     setMovieStatus(false);
   };
 
+  const handleSignUpChange = () => {
+    setSignUpStatus(true);
+  };
+
+  const handleLoginStatusChange = () => {
+    setLoginStatus(true);
+  };
+
+  const handleBackSignUp = () => {
+    setSignUpStatus(false);
+  };
+
+  const handleBackLogin = () => {
+    setLoginStatus(false);
+  };
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        setIsLoggedIn(false); // Clear the user state
+      })
+      .catch((error) => {
+        console.error("Logout error:", error);
+      });
+  };
+
+  const getUserInfo = () => {
+    const user = auth.currentUser;
+    console.log(user);
+  };
+
   return (
     <View style={styles.container}>
+      {signUpStatus && (
+        <View>
+          <TouchableOpacity style={styles.button} onPress={handleBackSignUp}>
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
+          <SignUpScreen handleSignUp={handleSignUp} />
+        </View>
+      )}
+      {loginStatus && !isLoggedIn && (
+        <View>
+          <TouchableOpacity style={styles.button} onPress={handleBackLogin}>
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
+          <LoginScreen handleLogin={handleLogin} />
+        </View>
+      )}
+      {!loginStatus && !signUpStatus && !visible && (
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleLoginStatusChange}
+          >
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText} onPress={handleSignUpChange}>
+              Sign Up
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {visible && (
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
@@ -86,10 +208,21 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
-      {!movieStatus && !visible && (
-        <TouchableOpacity onPress={getMovieData} style={styles.button}>
-          <Text style={styles.buttonText}>Get Movie</Text>
-        </TouchableOpacity>
+      {!movieStatus && !visible && isLoggedIn && (
+        <View>
+          <Text
+            style={styles.title}
+          >{`Welcome, ${auth.currentUser.displayName}!`}</Text>
+          <TouchableOpacity style={styles.button} onPress={handleLogout}>
+            <Text style={styles.buttonText}>Logout</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={getMovieData} style={styles.button}>
+            <Text style={styles.buttonText}>Get Movie</Text>
+          </TouchableOpacity>
+          {/* <TouchableOpacity onPress={getUserInfo}>
+            <Text>Get user info</Text>
+          </TouchableOpacity> */}
+        </View>
       )}
     </View>
   );
@@ -147,5 +280,15 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 100,
+  },
+  backButton: {
+    backgroundColor: "#B28A28",
+    position: "absolute",
+    top: 1,
+    left: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
 });
