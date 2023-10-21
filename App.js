@@ -6,6 +6,7 @@ import {
   View,
   Animated,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -20,6 +21,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  inMemoryPersistence,
+  setPersistence,
+  onIdTokenChanged,
+  AuthPersistence,
+  onAuthStateChanged,
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
 import { getDatabase, onValue, ref, set } from "firebase/database";
@@ -63,8 +69,10 @@ export default function App() {
   const handleLogin = (email, password) => {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
+        console.log("hit");
         const user = userCredential.user;
-        console.log(user);
+        // console.log(user);
+
         console.log(`User logged in: ${user.uid}`);
         setIsLoggedIn(true);
       })
@@ -219,16 +227,18 @@ export default function App() {
           >
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText} onPress={handleSignUpChange}>
-              Sign Up
-            </Text>
+          <TouchableOpacity style={styles.button} onPress={handleSignUpChange}>
+            <Text style={styles.buttonText}>Sign Up</Text>
           </TouchableOpacity>
         </View>
       )}
       {visible && (
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
           <Animated.View style={{ opacity: fadeAnim }}>
             <Image
@@ -249,7 +259,6 @@ export default function App() {
               style={styles.moviePoster}
             />
           </View>
-
           <TouchableOpacity style={styles.closeButton} onPress={handleX}>
             <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
@@ -262,9 +271,9 @@ export default function App() {
       )}
       {!movieStatus && !visible && isLoggedIn && !watchlist && (
         <View>
-          <Text
-            style={styles.title}
-          >{`Welcome, ${auth.currentUser.displayName}!`}</Text>
+          <Text style={styles.title}>
+            {`Welcome, ${auth.currentUser.displayName}!`}
+          </Text>
           <TouchableOpacity style={styles.button} onPress={handleLogout}>
             <Text style={styles.buttonText}>Logout</Text>
           </TouchableOpacity>
