@@ -29,6 +29,10 @@ const MovieCard = ({
     { label: "Fantasy", number: 14 },
     { label: "Sci-Fi", number: 878 },
     { label: "Thriller", number: 53 },
+    { label: "Documentary", number: 99 },
+    { label: "Chick-Flick", number: 10749 },
+    { label: "War", number: 10752 },
+    { label: "Western", number: 37 },
   ];
 
   const handleCleardropdownAndX = () => {
@@ -71,6 +75,14 @@ const MovieCard = ({
                   setBackground(require("../images/scifi.jpeg"));
                 } else if (itemValue === 53) {
                   setBackground(require("../images/thriller.jpg"));
+                } else if (itemValue === 99) {
+                  setBackground(require("../images/documentary.jpg"));
+                } else if (itemValue === 10749) {
+                  setBackground(require("../images/chickflick.jpg"));
+                } else if (itemValue === 10752) {
+                  setBackground(require("../images/war.jpg"));
+                } else if (itemValue === 37) {
+                  setBackground(require("../images/western.jpg"));
                 } else {
                   setBackground("");
                 }

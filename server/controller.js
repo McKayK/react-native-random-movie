@@ -2,14 +2,14 @@ const { default: axios } = require("axios");
 
 module.exports = {
   getMovie: (req, res) => {
-    const randomNumber = Math.floor(Math.random() * 251);
+    const randomNumber = Math.floor(Math.random() * 26 + 1);
     let movieId;
     let movie;
     const genre = req.query.genre;
 
     axios
       .get(
-        `https://api.themoviedb.org/3/discover/movie?api_key=e03f559d7536a0d2b96e367744ab9bf8&with_genres=${genre}&include_adult=false&include_video=true&language=en-US&page=${randomNumber}&sort_by=popularity.desc`
+        `https://api.themoviedb.org/3/discover/movie?api_key=e03f559d7536a0d2b96e367744ab9bf8&with_genres=${genre}&include_adult=false&include_video=true&language=en-US&with_original_language=en&page=${randomNumber}&sort_by=popularity.desc`
       )
       .then((dbres) => {
         movieId = Math.floor(Math.random() * dbres.data.results.length);
