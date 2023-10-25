@@ -7,6 +7,7 @@ import {
   Animated,
   Image,
   ActivityIndicator,
+  ImageBackground,
 } from "react-native";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -22,11 +23,6 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
-  inMemoryPersistence,
-  setPersistence,
-  onIdTokenChanged,
-  AuthPersistence,
-  onAuthStateChanged,
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
 import { getDatabase, onValue, ref, set } from "firebase/database";

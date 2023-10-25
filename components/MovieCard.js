@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 
@@ -12,6 +19,7 @@ const MovieCard = ({
   enterGetMovie,
   receiveGenre,
 }) => {
+  const [background, setBackground] = useState();
   const [dropdown, setDropdown] = useState("");
   const dropdownOptions = [
     { label: "Action", number: 28 },
@@ -39,33 +47,62 @@ const MovieCard = ({
   return (
     <View style={styles.container}>
       {enterGetMovie && !movieData && (
-        <View style={styles.container}>
-          <Picker
-            selectedValue={dropdown}
-            onValueChange={(itemValue, itemIndex) => setDropdown(itemValue)}
-            style={styles.picker}
-          >
-            {dropdownOptions.map((option, index) => {
-              return (
-                <Picker.Item
-                  label={option.label}
-                  value={option.number}
-                  key={index}
-                />
-              );
-            })}
-          </Picker>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSendGenreAndMovieData}
-          >
-            <Text style={styles.buttonText}>Get Movie</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleViewMovieCard}>
-            <Text style={styles.buttonText}>Go Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>{dropdown}</Text>
-        </View>
+        <ImageBackground
+          source={background}
+          resizeMode="cover"
+          style={styles.imgBackground}
+        >
+          <View style={styles.container}>
+            <Picker
+              selectedValue={dropdown}
+              onValueChange={(itemValue, itemIndex) => {
+                setDropdown(itemValue);
+                if (itemValue === 28) {
+                  setBackground(require("../images/action.jpg"));
+                } else if (itemValue === 35) {
+                  setBackground(require("../images/comedy.jpg"));
+                } else if (itemValue === 12) {
+                  setBackground(require("../images/adventure.jpg"));
+                } else if (itemValue === 18) {
+                  setBackground(require("../images/drama.jpg"));
+                } else if (itemValue === 14) {
+                  setBackground(require("../images/fantasy.jpg"));
+                } else if (itemValue === 878) {
+                  setBackground(require("../images/scifi.jpeg"));
+                } else if (itemValue === 53) {
+                  setBackground(require("../images/thriller.jpg"));
+                } else {
+                  setBackground("");
+                }
+              }}
+              style={styles.picker}
+              itemStyle={{ color: "red", fontWeight: "bold" }}
+            >
+              {dropdownOptions.map((option, index) => {
+                return (
+                  <Picker.Item
+                    label={option.label}
+                    value={option.number}
+                    key={index}
+                  />
+                );
+              })}
+            </Picker>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSendGenreAndMovieData}
+            >
+              <Text style={styles.buttonText}>Get Movie</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleViewMovieCard}
+            >
+              <Text style={styles.buttonText}>Go Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>{dropdown}</Text>
+          </View>
+        </ImageBackground>
       )}
 
       {movieData && (
@@ -107,6 +144,8 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
+    height: "100%",
+    width: "100%",
   },
   button: {
     backgroundColor: "#B28A28",
@@ -166,6 +205,12 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: 400,
+    color: "white",
+  },
+  imgBackground: {
+    width: "100%",
+    height: "100%",
+    // flex: 1,
   },
 });
 
