@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 import SignUpScreen from "./components/SignUpScreen";
+import MovieCard from "./components/MovieCard";
 
 //firebase
 // const app = initializeApp(firebaseConfig);
@@ -29,6 +30,7 @@ import {
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
 import { getDatabase, onValue, ref, set } from "firebase/database";
+import Watchlist from "./components/Watchlist";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
@@ -37,6 +39,9 @@ export default function App() {
   const [signUpStatus, setSignUpStatus] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [watchlist, setWatchlist] = useState();
+  const [enterGetMovie, setEnterGetMovie] = useState(false);
+  const [showWatchlistStatus, setShowWatchlistStatus] = useState(false);
+  const [genre, setGenre] = useState();
 
   //sign up
   const handleSignUp = (email, password, displayName) => {
@@ -81,9 +86,21 @@ export default function App() {
       });
   };
 
-  const getMovieData = () => {
+  const receiveGenre = (genre) => {
+    console.log("receive", genre);
+    setGenre(genre);
+    getMovieData(genre);
+    // console.log(genre);
+  };
+
+  const getMovieData = (genre) => {
+    console.log("movie data genre", genre);
     axios
-      .get("http://192.168.1.27:3003/movie")
+      .get("http://192.168.1.27:3003/movie", {
+        params: {
+          genre: genre,
+        },
+      })
       .then((res) => {
         // console.log(res.data);
         setMovieData(res.data);
@@ -94,7 +111,7 @@ export default function App() {
       .catch((error) => console.log(error));
   };
 
-  //add to watchlist
+  // //add to watchlist
   const addToWatchlist = () => {
     if (movieData) {
       const auth = getAuth();
@@ -135,7 +152,7 @@ export default function App() {
       const data = snapshot.val();
       setWatchlist(data);
     });
-    console.log("hit");
+    setShowWatchlistStatus(true);
   };
 
   //animation
@@ -194,6 +211,7 @@ export default function App() {
 
   const handleWatchBack = () => {
     setWatchlist();
+    setShowWatchlistStatus(false);
   };
 
   const getUserInfo = () => {
@@ -201,22 +219,31 @@ export default function App() {
     console.log(user);
   };
 
+  const handleViewMovieCard = () => {
+    setMovieData();
+    if (enterGetMovie) {
+      setEnterGetMovie(false);
+    } else {
+      setEnterGetMovie(true);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {signUpStatus && (
         <View>
-          <TouchableOpacity style={styles.button} onPress={handleBackSignUp}>
-            <Text style={styles.buttonText}>Back</Text>
-          </TouchableOpacity>
-          <SignUpScreen handleSignUp={handleSignUp} />
+          <SignUpScreen
+            handleSignUp={handleSignUp}
+            handleBackSignUp={handleBackSignUp}
+          />
         </View>
       )}
       {loginStatus && !isLoggedIn && (
         <View>
-          <TouchableOpacity style={styles.button} onPress={handleBackLogin}>
-            <Text style={styles.buttonText}>Back</Text>
-          </TouchableOpacity>
-          <LoginScreen handleLogin={handleLogin} />
+          <LoginScreen
+            handleLogin={handleLogin}
+            handleBackLogin={handleBackLogin}
+          />
         </View>
       )}
       {!loginStatus && !signUpStatus && !visible && (
@@ -248,28 +275,18 @@ export default function App() {
           </Animated.View>
         </View>
       )}
-      {movieStatus && (
-        <View style={styles.container}>
-          <Text style={styles.title}>{movieData.original_title}</Text>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{
-                uri: `https://image.tmdb.org/t/p/original${movieData.poster_path}`,
-              }}
-              style={styles.moviePoster}
-            />
-          </View>
-          <TouchableOpacity style={styles.closeButton} onPress={handleX}>
-            <Text style={styles.closeButtonText}>X</Text>
-          </TouchableOpacity>
-          {movieData && (
-            <TouchableOpacity style={styles.button} onPress={addToWatchlist}>
-              <Text style={styles.buttonText}>Add To Watchlist</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {enterGetMovie && (
+        <MovieCard
+          movieData={movieData}
+          addToWatchlist={addToWatchlist}
+          handleX={handleX}
+          handleViewMovieCard={handleViewMovieCard}
+          getMovieData={getMovieData}
+          enterGetMovie={enterGetMovie}
+          receiveGenre={receiveGenre}
+        />
       )}
-      {!movieStatus && !visible && isLoggedIn && !watchlist && (
+      {!enterGetMovie && !visible && isLoggedIn && !showWatchlistStatus && (
         <View>
           <Text style={styles.title}>
             {`Welcome, ${auth.currentUser.displayName}!`}
@@ -277,21 +294,27 @@ export default function App() {
           <TouchableOpacity style={styles.button} onPress={handleLogout}>
             <Text style={styles.buttonText}>Logout</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={getMovieData} style={styles.button}>
+          <TouchableOpacity onPress={handleViewMovieCard} style={styles.button}>
             <Text style={styles.buttonText}>Get Movie</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={showWatchlist}>
             <Text style={styles.buttonText}>Show Watchlist</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity onPress={getUserInfo}>
-            <Text>Get user info</Text>
-          </TouchableOpacity> */}
         </View>
       )}
-      {watchlist && (
+      {/* <Watchlist
+        handleShowWatchlist={handleShowWatchlist}
+        watchlist={watchlist}
+        movieData={movieData}
+      /> */}
+      {showWatchlistStatus && watchlist?.length > 0 && (
         <View style={styles.container}>
-          {watchlist.map((movie) => {
-            return <Text style={styles.title}>{movie}</Text>;
+          {watchlist.map((movie, index) => {
+            return (
+              <Text style={styles.title} key={index}>
+                {movie}
+              </Text>
+            );
           })}
           <TouchableOpacity style={styles.button} onPress={handleWatchBack}>
             <Text style={styles.buttonText}>BACK</Text>
@@ -305,7 +328,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },

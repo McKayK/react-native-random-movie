@@ -5,9 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 
-const SignUpScreen = ({ handleSignUp }) => {
+const SignUpScreen = ({ handleSignUp, handleBackSignUp }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -18,19 +19,22 @@ const SignUpScreen = ({ handleSignUp }) => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.button} onPress={handleBackSignUp}>
+        <Text style={styles.buttonText}>Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Sign Up</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.inputWidth]}
         placeholder="Name"
         onChangeText={(text) => setDisplayName(text)}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.inputWidth]}
         placeholder="Email"
         onChangeText={(text) => setEmail(text)}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.inputWidth]}
         placeholder="Password"
         secureTextEntry={true}
         onChangeText={(text) => setPassword(text)}
@@ -41,7 +45,7 @@ const SignUpScreen = ({ handleSignUp }) => {
     </View>
   );
 };
-
+const screen = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     // flex: 1,
@@ -54,7 +58,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    width: "80%",
     height: 60,
     borderColor: "gray",
     borderWidth: 1,
@@ -63,11 +66,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 18,
   },
+  inputWidth: {
+    width: screen.width * 0.8,
+  },
   signUpButton: {
     backgroundColor: "#B28A28",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 10,
+  },
+  button: {
+    backgroundColor: "#B28A28",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
   buttonText: {
     color: "white",
