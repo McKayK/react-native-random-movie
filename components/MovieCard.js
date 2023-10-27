@@ -33,6 +33,7 @@ const MovieCard = ({
     { label: "Chick-Flick", number: 10749 },
     { label: "War", number: 10752 },
     { label: "Western", number: 37 },
+    { label: "Animation", number: 16 },
   ];
 
   const handleCleardropdownAndX = () => {
@@ -83,8 +84,8 @@ const MovieCard = ({
                   setBackground(require("../images/war.jpg"));
                 } else if (itemValue === 37) {
                   setBackground(require("../images/western.jpg"));
-                } else {
-                  setBackground("");
+                } else if (itemValue === 16) {
+                  setBackground(require("../images/animation.jpg"));
                 }
               }}
               style={styles.picker}
