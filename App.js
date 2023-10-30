@@ -82,23 +82,29 @@ export default function App() {
       });
   };
 
-  const receiveGenre = (genre) => {
+  const receiveGenre = (genre, rating) => {
     console.log("receive", genre);
     setGenre(genre);
-    getMovieData(genre);
+    getMovieData(genre, rating);
     // console.log(genre);
   };
 
-  const getMovieData = (genre) => {
+  const getMovieData = (genre, rating) => {
     console.log("movie data genre", genre);
     axios
       .get("http://192.168.1.27:3003/movie", {
         params: {
           genre: genre,
+          rating: rating,
         },
       })
       .then((res) => {
         // console.log(res.data);
+        const foundProduct = res.data.release_dates.results.find(
+          (movie) => movie.iso_3166_1 === "US"
+        );
+        console.log(rating);
+        console.log(foundProduct.release_dates[0].certification);
         setMovieData(res.data);
         if (!movieStatus) {
           setMovieStatus(true);

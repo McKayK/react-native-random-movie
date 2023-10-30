@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
+  Switch,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
@@ -19,6 +20,7 @@ const MovieCard = ({
   enterGetMovie,
   receiveGenre,
 }) => {
+  const [ratedRSwitch, setRatedRSwitch] = useState(false);
   const [background, setBackground] = useState();
   const [dropdown, setDropdown] = useState("");
   const dropdownOptions = [
@@ -36,13 +38,22 @@ const MovieCard = ({
     { label: "Animation", number: 16 },
   ];
 
+  const toggleRatedR = () => {
+    if (ratedRSwitch) {
+      setRatedRSwitch(false);
+    } else {
+      setRatedRSwitch(true);
+    }
+    console.log("hit", ratedRSwitch);
+  };
+
   const handleCleardropdownAndX = () => {
     handleX();
     setDropdown("");
   };
 
   const sendGenre = () => {
-    receiveGenre(dropdown);
+    receiveGenre(dropdown, ratedRSwitch);
     // getMovieData();
   };
 
@@ -113,7 +124,19 @@ const MovieCard = ({
             >
               <Text style={styles.buttonText}>Go Back</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>{dropdown}</Text>
+            {dropdown === 28 && (
+              <>
+                <Text style={styles.title}>Rated R</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={ratedRSwitch ? "#f5dd4b" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={toggleRatedR}
+                  value={ratedRSwitch}
+                />
+              </>
+            )}
+            {/* <Text style={styles.title}>{dropdown}</Text> */}
           </View>
         </ImageBackground>
       )}
