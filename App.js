@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   ImageBackground,
+  Dimensions,
 } from "react-native";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -23,6 +24,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  onAuthStateChanged,
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
 import { getDatabase, onValue, ref, set } from "firebase/database";
@@ -38,6 +40,7 @@ export default function App() {
   const [enterGetMovie, setEnterGetMovie] = useState(false);
   const [showWatchlistStatus, setShowWatchlistStatus] = useState(false);
   const [genre, setGenre] = useState();
+  const [currentUser, setCurrentUser] = useState();
 
   //sign up
   const handleSignUp = (email, password, displayName) => {
@@ -67,6 +70,21 @@ export default function App() {
     setSignUpStatus(false);
   };
   //login
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        // console.log("current user", user);
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleLogin = (email, password) => {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
@@ -86,13 +104,13 @@ export default function App() {
     console.log("receive", genre);
     setGenre(genre);
     getMovieData(genre, rating);
-    // console.log(genre);
+    console.log(genre);
   };
 
   const getMovieData = (genre, rating) => {
     console.log("movie data genre", genre);
     axios
-      .get("http://192.168.1.27:3003/movie", {
+      .get("http://192.168.1.16:3003/movie", {
         params: {
           genre: genre,
           rating: rating,
@@ -115,6 +133,7 @@ export default function App() {
 
   // //add to watchlist
   const addToWatchlist = () => {
+    console.log("hit addtowatchlist");
     if (movieData) {
       const auth = getAuth();
       const user = auth.currentUser.uid;
@@ -128,6 +147,7 @@ export default function App() {
           data.push(movieData.original_title);
           set(userRef, data)
             .then(() => {
+              alert(`Added ${movieData.original_title} to your watchlist!`);
               console.log(
                 `Added ${movieData.original_title} to the watchlist.`
               );
@@ -231,6 +251,7 @@ export default function App() {
   };
 
   return (
+    // SIGN UP SCREEN AFTER PRESSING SIGN UP FROM MAIN PAGE
     <View style={styles.container}>
       {signUpStatus && (
         <View>
@@ -240,7 +261,9 @@ export default function App() {
           />
         </View>
       )}
-      {loginStatus && !isLoggedIn && (
+
+      {/* LOGIN SCREEN AFTER PRESSING LOGIN BUTTON FROM MAIN PAGE */}
+      {loginStatus && !isLoggedIn && !currentUser && (
         <View>
           <LoginScreen
             handleLogin={handleLogin}
@@ -248,7 +271,9 @@ export default function App() {
           />
         </View>
       )}
-      {!loginStatus && !signUpStatus && !visible && (
+
+      {/* LOGIN, SIGN UP SCREEN */}
+      {!loginStatus && !signUpStatus && !visible && !isLoggedIn && (
         <View style={styles.container}>
           <TouchableOpacity
             style={styles.button}
@@ -261,6 +286,8 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* OPENING ANIMATION */}
       {visible && (
         <View
           style={{
@@ -277,6 +304,8 @@ export default function App() {
           </Animated.View>
         </View>
       )}
+
+      {/* MOVIE CARD, SHOWS LIST OF MOVIE GENRES AND RANDOM MOVIE GET BUTTON */}
       {enterGetMovie && (
         <MovieCard
           movieData={movieData}
@@ -288,27 +317,26 @@ export default function App() {
           receiveGenre={receiveGenre}
         />
       )}
+
+      {/* MAIN PAGE AFTER USER LOGS IN */}
       {!enterGetMovie && !visible && isLoggedIn && !showWatchlistStatus && (
-        <View>
-          <Text style={styles.title}>
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeText}>
             {`Welcome, ${auth.currentUser.displayName}!`}
           </Text>
-          <TouchableOpacity style={styles.button} onPress={handleLogout}>
+          {/* <TouchableOpacity style={styles.button} onPress={handleLogout}>
             <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={handleViewMovieCard} style={styles.button}>
-            <Text style={styles.buttonText}>Get Movie</Text>
+            <Text style={styles.buttonText}>Random Movie</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={showWatchlist}>
-            <Text style={styles.buttonText}>Show Watchlist</Text>
+            <Text style={styles.buttonText}>Watchlist</Text>
           </TouchableOpacity>
         </View>
       )}
-      {/* <Watchlist
-        handleShowWatchlist={handleShowWatchlist}
-        watchlist={watchlist}
-        movieData={movieData}
-      /> */}
+
+      {/* SHOWS THE WATCH LIST OF THE USER */}
       {showWatchlistStatus && watchlist?.length > 0 && (
         <View style={styles.container}>
           {watchlist.map((movie, index) => {
@@ -323,9 +351,17 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.buttonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
+const screenWidth = Dimensions.get("window").width;
+const buttonWidthPercentage = 80;
 
 const styles = StyleSheet.create({
   container: {
@@ -333,18 +369,62 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+  },
+  logoutContainer: {
+    width: "100%",
+    position: "absolute",
+    bottom: 0,
+  },
+  welcomeContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  welcomeText: {
+    fontSize: 40,
+    fontWeight: "bold",
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: "#B28A28",
+    backgroundColor: "#009572",
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    height: 50,
+    justifyContent: "center",
+    paddingHorizontal: 30,
     alignItems: "center",
+    marginBottom: 20,
+    width: (screenWidth * buttonWidthPercentage) / 100,
+    elevation: 3,
+    shadowColor: "#10495C",
+    shadowOffset: {
+      width: 2,
+      height: 7,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
   },
   buttonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: "bold",
+  },
+  logoutButton: {
+    backgroundColor: "#10495C",
+    borderRadius: 0,
+    justifyContent: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#10495C",
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
   },
   title: {
     fontSize: 20,

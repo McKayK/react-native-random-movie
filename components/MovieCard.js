@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ImageBackground,
   Switch,
+  Dimensions,
+  PanResponder,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
@@ -22,7 +24,13 @@ const MovieCard = ({
 }) => {
   const [ratedRSwitch, setRatedRSwitch] = useState(false);
   const [background, setBackground] = useState();
-  const [dropdown, setDropdown] = useState("");
+  const [dropdown, setDropdown] = useState({
+    itemValue: "",
+    index: null,
+    genre: "",
+  });
+  const [swipeProcessedRight, setSwipeProcessedRight] = useState(false);
+  const [swipeProcessedLeft, setSwipeProcessedLeft] = useState(false);
   const dropdownOptions = [
     { label: "Action", number: 28 },
     { label: "Comedy", number: 35 },
@@ -37,6 +45,17 @@ const MovieCard = ({
     { label: "Western", number: 37 },
     { label: "Animation", number: 16 },
   ];
+
+  useEffect(() => {
+    if (swipeProcessedRight) {
+      sendGenre();
+      setSwipeProcessedRight(false);
+    }
+    if (swipeProcessedLeft) {
+      addToWatchlist();
+      setSwipeProcessedLeft(false);
+    }
+  }, [dropdown, swipeProcessedRight, swipeProcessedLeft]);
 
   const toggleRatedR = () => {
     if (ratedRSwitch) {
@@ -53,13 +72,30 @@ const MovieCard = ({
   };
 
   const sendGenre = () => {
-    receiveGenre(dropdown, ratedRSwitch);
-    // getMovieData();
+    console.log("DROPDOWN", dropdown);
+    receiveGenre(dropdown.itemValue, ratedRSwitch);
   };
 
   const handleSendGenreAndMovieData = () => {
     sendGenre();
   };
+
+  const swipeResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderEnd: (event, gestureState) => {
+        if (gestureState.dx > 50) {
+          console.log("right");
+          setSwipeProcessedRight(true);
+        } else if (gestureState.dx < -50) {
+          console.log("left");
+          setSwipeProcessedLeft(true);
+          // addToWatchlist();
+        }
+      },
+    })
+  ).current;
+
   return (
     <View style={styles.container}>
       {enterGetMovie && !movieData && (
@@ -69,10 +105,24 @@ const MovieCard = ({
           style={styles.imgBackground}
         >
           <View style={styles.container}>
+            <View style={styles.questionContainer}>
+              <Text style={styles.title}>
+                What genre are you in the mood for?
+              </Text>
+            </View>
+
+            <Text style={styles.genreTitle}>{dropdown.genre}</Text>
             <Picker
-              selectedValue={dropdown}
+              selectedValue={dropdown.itemValue}
               onValueChange={(itemValue, itemIndex) => {
-                setDropdown(itemValue);
+                const selectedGenre = dropdownOptions.find(
+                  (option) => option.number === itemValue
+                );
+                setDropdown({
+                  itemValue,
+                  index: itemIndex,
+                  genre: selectedGenre?.label,
+                });
                 if (itemValue === 28) {
                   setBackground(require("../images/action.jpg"));
                 } else if (itemValue === 35) {
@@ -100,7 +150,8 @@ const MovieCard = ({
                 }
               }}
               style={styles.picker}
-              itemStyle={{ color: "red", fontWeight: "bold" }}
+              itemStyle={styles.pickerItem}
+              dropdownIconColor={"#009572"}
             >
               {dropdownOptions.map((option, index) => {
                 return (
@@ -108,22 +159,29 @@ const MovieCard = ({
                     label={option.label}
                     value={option.number}
                     key={index}
+                    color="black"
                   />
                 );
               })}
             </Picker>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSendGenreAndMovieData}
-            >
-              <Text style={styles.buttonText}>Get Movie</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleViewMovieCard}
-            >
-              <Text style={styles.buttonText}>Go Back</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              {dropdown.genre && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSendGenreAndMovieData}
+                >
+                  <Text style={styles.buttonText}>Get Movie</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleViewMovieCard}
+              >
+                <Text style={styles.buttonText}>Go Back</Text>
+              </TouchableOpacity>
+            </View>
+
             {dropdown === 28 && (
               <>
                 <Text style={styles.title}>Rated R</Text>
@@ -150,7 +208,7 @@ const MovieCard = ({
             <Text style={styles.buttonText}>Get Another</Text>
           </TouchableOpacity>
           <Text style={styles.title}>{movieData.original_title}</Text>
-          <View style={styles.imageContainer}>
+          <View style={styles.imageContainer} {...swipeResponder.panHandlers}>
             <Image
               source={{
                 uri: `https://image.tmdb.org/t/p/original${movieData.poster_path}`,
@@ -174,6 +232,9 @@ const MovieCard = ({
   );
 };
 
+const screenWidth = Dimensions.get("window").width;
+const buttonWidthPercentage = 80;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -182,23 +243,53 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     height: "100%",
     width: "100%",
+    position: "relative",
+  },
+  questionContainer: {
+    position: "absolute",
+    top: 50,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 50,
   },
   button: {
-    backgroundColor: "#B28A28",
+    backgroundColor: "#009572",
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    height: 50,
+    justifyContent: "center",
+    paddingHorizontal: 30,
     alignItems: "center",
+    marginBottom: 20,
+    width: (screenWidth * buttonWidthPercentage) / 100,
+    elevation: 3,
+    shadowColor: "#10495C",
+    shadowOffset: {
+      width: 2,
+      height: 7,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
   },
   buttonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: "bold",
   },
   title: {
-    fontSize: 20,
+    fontSize: 50,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
+    color: "#009572",
+  },
+  genreTitle: {
+    fontSize: 70,
+    fontWeight: "bold",
+    color: "#10495C",
+    marginBottom: 10,
+    position: "absolute",
+    top: 175,
   },
   imageContainer: {
     shadowColor: "#B28A28",
@@ -240,13 +331,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   picker: {
-    width: 400,
+    width: (screenWidth * buttonWidthPercentage) / 100,
     color: "white",
+    backgroundColor: "#009572",
+    borderRadius: 10,
+    marginBottom: 20,
+    height: 50,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderColor: "#fff", // Set border color to white
+    borderWidth: 1, // Add a border
+  },
+  pickerItem: {
+    color: "#009572",
+    fontSize: 18,
   },
   imgBackground: {
     width: "100%",
     height: "100%",
-    // flex: 1,
   },
 });
 
