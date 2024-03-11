@@ -46,13 +46,17 @@ const MovieCard = ({
     { label: "Animation", number: 16 },
   ];
 
+  const [movieIndex, setMovieIndex] = useState(0);
+
   useEffect(() => {
     if (swipeProcessedRight) {
-      sendGenre();
+      // sendGenre();
+      handleSwipeRight();
       setSwipeProcessedRight(false);
     }
     if (swipeProcessedLeft) {
-      addToWatchlist();
+      // addToWatchlist();
+      handleSwipeLeft();
       setSwipeProcessedLeft(false);
     }
   }, [dropdown, swipeProcessedRight, swipeProcessedLeft]);
@@ -78,6 +82,18 @@ const MovieCard = ({
 
   const handleSendGenreAndMovieData = () => {
     sendGenre();
+  };
+
+  const handleSwipeRight = () => {
+    if (movieIndex < movieData.length - 1) {
+      setMovieIndex(() => movieIndex + 1);
+    }
+  };
+
+  const handleSwipeLeft = () => {
+    if (movieIndex >= 1) {
+      setMovieIndex(() => movieIndex - 1);
+    }
   };
 
   const swipeResponder = useRef(
@@ -207,11 +223,13 @@ const MovieCard = ({
           >
             <Text style={styles.buttonText}>Get Another</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{movieData.original_title}</Text>
+          <Text style={styles.title}>
+            {movieData[movieIndex].original_title}
+          </Text>
           <View style={styles.imageContainer} {...swipeResponder.panHandlers}>
             <Image
               source={{
-                uri: `https://image.tmdb.org/t/p/original${movieData.poster_path}`,
+                uri: `https://image.tmdb.org/t/p/original${movieData[movieIndex].poster_path}`,
               }}
               style={styles.moviePoster}
             />
@@ -221,9 +239,12 @@ const MovieCard = ({
             style={styles.closeButton}
             onPress={handleCleardropdownAndX}
           >
-            <Text style={styles.closeButtonText}>X</Text>
+            <Text style={styles.closeButtonText}>Back</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={addToWatchlist}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => addToWatchlist(movieIndex)}
+          >
             <Text style={styles.buttonText}>Add To Watchlist</Text>
           </TouchableOpacity>
         </View>
@@ -305,6 +326,7 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: "contain",
     marginBottom: 10,
+    borderRadius: 10,
   },
   closeButton: {
     backgroundColor: "#B28A28",
@@ -339,8 +361,8 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: "center",
     paddingHorizontal: 16,
-    borderColor: "#fff", // Set border color to white
-    borderWidth: 1, // Add a border
+    borderColor: "#fff",
+    borderWidth: 1,
   },
   pickerItem: {
     color: "#009572",

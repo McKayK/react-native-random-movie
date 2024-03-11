@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -27,8 +28,15 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import LoginScreen from "./components/LoginScreen";
-import { getDatabase, onValue, ref, set } from "firebase/database";
+import {
+  getDatabase,
+  onValue,
+  ref,
+  set,
+  runTransaction,
+} from "firebase/database";
 import Watchlist from "./components/Watchlist";
+import WatchlistMovie from "./components/WatchlistMovie";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
@@ -41,6 +49,7 @@ export default function App() {
   const [showWatchlistStatus, setShowWatchlistStatus] = useState(false);
   const [genre, setGenre] = useState();
   const [currentUser, setCurrentUser] = useState();
+  const [pageOfMovies, setPageOfMovies] = useState();
 
   //sign up
   const handleSignUp = (email, password, displayName) => {
@@ -117,13 +126,13 @@ export default function App() {
         },
       })
       .then((res) => {
-        // console.log(res.data);
-        const foundProduct = res.data.release_dates.results.find(
-          (movie) => movie.iso_3166_1 === "US"
-        );
+        // console.log(res.data.results[0]);
+        // const foundProduct = res.data.release_dates.results.find(
+        //   (movie) => movie.iso_3166_1 === "US"
+        // );
         console.log(rating);
-        console.log(foundProduct.release_dates[0].certification);
-        setMovieData(res.data);
+        // console.log(foundProduct.release_dates[0].certification);
+        setMovieData(res.data.results);
         if (!movieStatus) {
           setMovieStatus(true);
         }
@@ -132,7 +141,7 @@ export default function App() {
   };
 
   // //add to watchlist
-  const addToWatchlist = () => {
+  const addToWatchlist = (index) => {
     console.log("hit addtowatchlist");
     if (movieData) {
       const auth = getAuth();
@@ -140,27 +149,53 @@ export default function App() {
       const db = getDatabase();
       const userRef = ref(db, `users/${user}/watchlist`);
 
-      // Read the existing watchlist
-      onValue(userRef, (snapshot) => {
-        const data = snapshot.val() || [];
-        if (!data.includes(movieData.original_title)) {
-          data.push(movieData.original_title);
-          set(userRef, data)
-            .then(() => {
-              alert(`Added ${movieData.original_title} to your watchlist!`);
-              console.log(
-                `Added ${movieData.original_title} to the watchlist.`
-              );
-            })
-            .catch((error) => {
-              console.error(`Error adding movie to watchlist: ${error}`);
-            });
+      runTransaction(userRef, (currentData) => {
+        // If the currentData is null, initialize it as an empty array
+        const data = currentData || [];
+
+        if (!data.includes(movieData[index])) {
+          data.push(movieData[index]);
+          alert(`Added ${movieData[index].original_title} to your watchlist!`);
         } else {
           console.log(
-            `${movieData.original_title} is already in the watchlist.`
+            `${movieData[index].original_title} is already in the watchlist.`
           );
         }
-      });
+
+        return data;
+      })
+        .then(() => {
+          console.log(
+            `Added ${movieData[index].original_title} to the watchlist.`
+          );
+        })
+        .catch((error) => {
+          console.error(`Error adding movie to watchlist: ${error}`);
+        });
+
+      // Read the existing watchlist
+      // onValue(userRef, (snapshot) => {
+      //   const data = snapshot.val() || [];
+      //   if (!data.includes(movieData[index].original_title)) {
+      //     data.push(movieData[index].original_title);
+      //     set(userRef, data)
+      //       .then(() => {
+      //         alert(
+      //           `Added ${movieData[index].original_title} to your watchlist!`
+      //         );
+      //         console.log(
+      //           `Added ${movieData[index].original_title} to the watchlist.`
+      //         );
+      //       })
+      //       .catch((error) => {
+      //         console.error(`Error adding movie to watchlist: ${error}`);
+      //       });
+      //   } else {
+      //     console.log(
+      //       `${movieData[index].original_title} is already in the watchlist.`
+      //     );
+      //   }
+      // });
     }
   };
 
@@ -175,6 +210,29 @@ export default function App() {
       setWatchlist(data);
     });
     setShowWatchlistStatus(true);
+  };
+
+  const deleteFromWatchlist = (movie) => {
+    const auth = getAuth();
+    const user = auth.currentUser.uid;
+    const db = getDatabase();
+    const userRef = ref(db, `users/${user}/watchlist`);
+
+    runTransaction(userRef, (currentData) => {
+      const data = currentData || [];
+
+      const updatedData = data.filter(
+        (item) => item.original_title !== movie.original_title
+      );
+      return updatedData;
+    })
+      .then(() => {
+        alert(`Removed ${movie.original_title} from your watchlist!`);
+        console.log(`Removed ${movie.original_title} from the watchlist.`);
+      })
+      .catch((error) => {
+        console.error(`Error removing movie from watchlist: ${error}`);
+      });
   };
 
   //animation
@@ -338,14 +396,23 @@ export default function App() {
 
       {/* SHOWS THE WATCH LIST OF THE USER */}
       {showWatchlistStatus && watchlist?.length > 0 && (
-        <View style={styles.container}>
-          {watchlist.map((movie, index) => {
-            return (
-              <Text style={styles.title} key={index}>
-                {movie}
-              </Text>
-            );
-          })}
+        <View style={styles.watchlistContainer}>
+          <ScrollView style={styles.scrollContainer}>
+            {watchlist.map((movie, index) => {
+              // console.log("WATCHLIST", movie.original_title);
+              return (
+                // <Text style={styles.title} key={index}>
+                //   {movie.original_title}
+                // </Text>
+                <WatchlistMovie
+                  movie={movie}
+                  key={index}
+                  deleteFromWatchlist={deleteFromWatchlist}
+                />
+              );
+            })}
+          </ScrollView>
+
           <TouchableOpacity style={styles.button} onPress={handleWatchBack}>
             <Text style={styles.buttonText}>BACK</Text>
           </TouchableOpacity>
@@ -376,6 +443,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
   },
+  watchlistContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
   welcomeContainer: {
     flex: 1,
     justifyContent: "center",
@@ -386,6 +457,10 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "bold",
     marginBottom: 20,
+  },
+  scrollContainer: {
+    maxHeight: Dimensions.get("window").height - 250,
+    // flexDirection: "row",
   },
   button: {
     backgroundColor: "#009572",
