@@ -6,34 +6,81 @@ import {
   Dimensions,
   Image,
   TouchableHighlight,
+  ScrollView,
+  Pressable,
+  TouchableWithoutFeedback,
 } from "react-native";
 import React, { useState } from "react";
+import FlipCard from "react-native-flip-card";
 
 const WatchlistMovie = ({ movie, deleteFromWatchlist }) => {
   const [movieOverviewStatus, setMovieOverviewStatus] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const handleMovieOverviewStatus = () => {
     setMovieOverviewStatus(!movieOverviewStatus);
   };
+
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
   return (
     <View style={styles.container}>
+      <FlipCard
+        flip={isFlipped}
+        friction={3}
+        perspective={1000}
+        flipHorizontal={true}
+        flipVertical={false}
+      >
+        {/* Front Side */}
+        <View style={styles.face}>
+          {/* Wrap the image in a View */}
+          <View>
+            <Image
+              source={{
+                uri: `https://image.tmdb.org/t/p/original${movie.poster_path}`,
+              }}
+              style={styles.moviePoster}
+            />
+          </View>
+        </View>
+        {/* Back Side */}
+        <View style={styles.back}>
+          <View style={styles.descriptionContainer}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Pressable>
+                <Text
+                  style={styles.movieDescription}
+                  onPress={handleFlip}
+                  suppressHighlighting={true}
+                >
+                  {movie.overview}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </FlipCard>
+
       <Text style={styles.title} onPress={handleMovieOverviewStatus}>
         {movie.original_title}
       </Text>
-      <TouchableHighlight onPress={handleMovieOverviewStatus}>
+      {/* <TouchableHighlight onPress={handleMovieOverviewStatus}>
         <Image
           source={{
             uri: `https://image.tmdb.org/t/p/original${movie.poster_path}`,
           }}
           style={styles.moviePoster}
         />
-      </TouchableHighlight>
+      </TouchableHighlight> */}
 
-      {movieOverviewStatus && (
+      {/* {movieOverviewStatus && (
         <View style={styles.descriptionContainer}>
           <Text style={styles.movieDescription}>{movie.overview}</Text>
         </View>
-      )}
+      )} */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => deleteFromWatchlist(movie)}
@@ -92,6 +139,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,
+    width: 200,
+    height: 300,
   },
   movieDescription: {
     fontSize: 16,
@@ -108,6 +157,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 10,
   },
+  scrollView: {},
 });
 
 export default WatchlistMovie;

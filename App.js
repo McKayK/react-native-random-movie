@@ -119,7 +119,8 @@ export default function App() {
   const getMovieData = (genre, rating) => {
     console.log("movie data genre", genre);
     axios
-      .get("http://192.168.1.16:3003/movie", {
+      // .get("http://192.168.1.16:3003/movie", {
+      .get("http://100.64.26.32:3003/movie", {
         params: {
           genre: genre,
           rating: rating,
@@ -385,6 +386,7 @@ export default function App() {
           {/* <TouchableOpacity style={styles.button} onPress={handleLogout}>
             <Text style={styles.buttonText}>Logout</Text>
           </TouchableOpacity> */}
+
           <TouchableOpacity onPress={handleViewMovieCard} style={styles.button}>
             <Text style={styles.buttonText}>Random Movie</Text>
           </TouchableOpacity>
