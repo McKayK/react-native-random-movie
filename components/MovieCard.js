@@ -9,9 +9,13 @@ import {
   Switch,
   Dimensions,
   PanResponder,
+  Pressable,
+  ScrollView,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
+import FlipCard from "react-native-flip-card";
+import Popup from "./Popup";
 
 const MovieCard = ({
   movieData,
@@ -21,6 +25,7 @@ const MovieCard = ({
   getMovieData,
   enterGetMovie,
   receiveGenre,
+  popupMessage,
 }) => {
   const [ratedRSwitch, setRatedRSwitch] = useState(false);
   const [background, setBackground] = useState();
@@ -31,6 +36,7 @@ const MovieCard = ({
   });
   const [swipeProcessedRight, setSwipeProcessedRight] = useState(false);
   const [swipeProcessedLeft, setSwipeProcessedLeft] = useState(false);
+  const [swipeProcessedUp, setSwipeProcessedUp] = useState(false);
   const dropdownOptions = [
     { label: "Action", number: 28 },
     { label: "Comedy", number: 35 },
@@ -47,6 +53,14 @@ const MovieCard = ({
   ];
 
   const [movieIndex, setMovieIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [popupStatus, setPopupStatus] = useState(false);
+
+  useEffect(() => {
+    if (movieData) {
+      setMovieIndex(Math.floor(Math.random() * movieData.length));
+    }
+  }, [movieData]);
 
   useEffect(() => {
     if (swipeProcessedRight) {
@@ -59,7 +73,11 @@ const MovieCard = ({
       handleSwipeLeft();
       setSwipeProcessedLeft(false);
     }
-  }, [dropdown, swipeProcessedRight, swipeProcessedLeft]);
+    if (swipeProcessedUp) {
+      handleSwipeUp();
+      setSwipeProcessedUp(false);
+    }
+  }, [dropdown, swipeProcessedRight, swipeProcessedLeft, swipeProcessedUp]);
 
   const toggleRatedR = () => {
     if (ratedRSwitch) {
@@ -85,15 +103,23 @@ const MovieCard = ({
   };
 
   const handleSwipeRight = () => {
+    if (movieIndex >= 1) {
+      setMovieIndex(() => movieIndex - 1);
+    }
+  };
+
+  const handleSwipeLeft = () => {
     if (movieIndex < movieData.length - 1) {
       setMovieIndex(() => movieIndex + 1);
     }
   };
 
-  const handleSwipeLeft = () => {
-    if (movieIndex >= 1) {
-      setMovieIndex(() => movieIndex - 1);
-    }
+  const handleSwipeUp = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  const handlePopupStatus = () => {
+    setPopupStatus(!popupStatus);
   };
 
   const swipeResponder = useRef(
@@ -107,6 +133,8 @@ const MovieCard = ({
           console.log("left");
           setSwipeProcessedLeft(true);
           // addToWatchlist();
+        } else if (gestureState.dy < -50) {
+          setSwipeProcessedUp(true);
         }
       },
     })
@@ -121,6 +149,12 @@ const MovieCard = ({
           style={styles.imgBackground}
         >
           <View style={styles.container}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleViewMovieCard}
+            >
+              <Text style={styles.backButtonText}>⇦</Text>
+            </TouchableOpacity>
             <View style={styles.questionContainer}>
               <Text style={styles.title}>
                 What genre are you in the mood for?
@@ -175,7 +209,7 @@ const MovieCard = ({
                     label={option.label}
                     value={option.number}
                     key={index}
-                    color="black"
+                    color="white"
                   />
                 );
               })}
@@ -189,13 +223,6 @@ const MovieCard = ({
                   <Text style={styles.buttonText}>Get Movie</Text>
                 </TouchableOpacity>
               )}
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleViewMovieCard}
-              >
-                <Text style={styles.buttonText}>Go Back</Text>
-              </TouchableOpacity>
             </View>
 
             {dropdown === 28 && (
@@ -218,32 +245,76 @@ const MovieCard = ({
       {movieData && (
         <View style={styles.container}>
           <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleCleardropdownAndX}
+          >
+            <Text style={styles.backButtonText}>⇦</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.button}
             onPress={handleSendGenreAndMovieData}
           >
             <Text style={styles.buttonText}>Get Another</Text>
           </TouchableOpacity>
+          <View style={{ flex: 0, height: 525, marginBottom: 20 }}>
+            <FlipCard
+              flip={isFlipped}
+              friction={2}
+              perspective={1000}
+              flipHorizontal={false}
+              flipVertical={true}
+            >
+              {/* Face Side */}
+              <View style={styles.face}>
+                <View
+                  style={styles.imageContainer}
+                  {...swipeResponder.panHandlers}
+                >
+                  <Image
+                    source={{
+                      uri: `https://image.tmdb.org/t/p/original${movieData[movieIndex].poster_path}`,
+                    }}
+                    style={styles.moviePoster}
+                  />
+                </View>
+              </View>
+              {/* Back Side */}
+              <View style={styles.descriptionContainer}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <Pressable>
+                    <Text
+                      style={styles.movieDescription}
+                      onPress={handleSwipeUp}
+                      suppressHighlighting={true}
+                    >
+                      {movieData[movieIndex].overview}
+                    </Text>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            </FlipCard>
+          </View>
           <Text style={styles.title}>
             {movieData[movieIndex].original_title}
           </Text>
-          <View style={styles.imageContainer} {...swipeResponder.panHandlers}>
-            <Image
-              source={{
-                uri: `https://image.tmdb.org/t/p/original${movieData[movieIndex].poster_path}`,
-              }}
-              style={styles.moviePoster}
+          <View
+            style={styles.imageContainer}
+            {...swipeResponder.panHandlers}
+          ></View>
+
+          {popupStatus && (
+            <Popup
+              popupMessage={popupMessage}
+              handlePopupStatus={handlePopupStatus}
             />
-          </View>
+          )}
 
           <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleCleardropdownAndX}
-          >
-            <Text style={styles.closeButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={styles.button}
-            onPress={() => addToWatchlist(movieIndex)}
+            onPress={() => {
+              addToWatchlist(movieIndex);
+              handlePopupStatus();
+            }}
           >
             <Text style={styles.buttonText}>Add To Watchlist</Text>
           </TouchableOpacity>
@@ -266,9 +337,17 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "relative",
   },
+  descriptionContainer: {
+    backgroundColor: "#f4f4f4",
+    padding: 20,
+    marginVertical: 10,
+    borderRadius: 10,
+    width: 350,
+    height: 525,
+  },
   questionContainer: {
     position: "absolute",
-    top: 50,
+    top: 70,
   },
   buttonContainer: {
     position: "absolute",
@@ -297,6 +376,11 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: "bold",
   },
+  backButtonText: {
+    color: "#009572",
+    fontSize: 35,
+    fontWeight: "bold",
+  },
   title: {
     fontSize: 50,
     fontWeight: "bold",
@@ -312,8 +396,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 175,
   },
+  movieDescription: {
+    fontSize: 35,
+    lineHeight: 40,
+    textAlign: "justify",
+    color: "#009572",
+  },
   imageContainer: {
-    shadowColor: "#B28A28",
+    shadowColor: "#009572",
     shadowOffset: {
       width: 0,
       height: 0,
@@ -322,16 +412,23 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   moviePoster: {
-    width: 200,
-    height: 300,
+    width: 350,
+    height: 525,
     resizeMode: "contain",
     marginBottom: 10,
     borderRadius: 10,
   },
   closeButton: {
-    backgroundColor: "#B28A28",
-    padding: 10,
-    borderRadius: 100,
+    backgroundColor: "transparent",
+    position: "absolute",
+    top: 40,
+    left: 20,
+  },
+  goBackButton: {
+    backgroundColor: "black",
+    position: "absolute",
+    top: 30,
+    left: 20,
   },
   closeButtonText: {
     color: "black",

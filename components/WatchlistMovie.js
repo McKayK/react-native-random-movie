@@ -12,10 +12,17 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 import FlipCard from "react-native-flip-card";
+import Popup from "./Popup";
 
-const WatchlistMovie = ({ movie, deleteFromWatchlist }) => {
+const WatchlistMovie = ({
+  movie,
+  deleteFromWatchlist,
+  popupMessage,
+  handlePopupStatus,
+}) => {
   const [movieOverviewStatus, setMovieOverviewStatus] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [popupStatus, setPopupStatus] = useState(false);
 
   const handleMovieOverviewStatus = () => {
     setMovieOverviewStatus(!movieOverviewStatus);
@@ -81,9 +88,13 @@ const WatchlistMovie = ({ movie, deleteFromWatchlist }) => {
           <Text style={styles.movieDescription}>{movie.overview}</Text>
         </View>
       )} */}
+
       <TouchableOpacity
         style={styles.button}
-        onPress={() => deleteFromWatchlist(movie)}
+        onPress={() => {
+          deleteFromWatchlist(movie);
+          handlePopupStatus();
+        }}
       >
         <Text style={styles.buttonText}>Delete</Text>
       </TouchableOpacity>

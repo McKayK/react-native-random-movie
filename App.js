@@ -37,6 +37,7 @@ import {
 } from "firebase/database";
 import Watchlist from "./components/Watchlist";
 import WatchlistMovie from "./components/WatchlistMovie";
+import Popup from "./components/Popup";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
@@ -50,6 +51,8 @@ export default function App() {
   const [genre, setGenre] = useState();
   const [currentUser, setCurrentUser] = useState();
   const [pageOfMovies, setPageOfMovies] = useState();
+  const [popupMessage, setPopupMessage] = useState();
+  const [popupStatus, setPopupStatus] = useState(false);
 
   //sign up
   const handleSignUp = (email, password, displayName) => {
@@ -127,7 +130,7 @@ export default function App() {
         },
       })
       .then((res) => {
-        // console.log(res.data.results[0]);
+        // console.log(res.data.results);
         // const foundProduct = res.data.release_dates.results.find(
         //   (movie) => movie.iso_3166_1 === "US"
         // );
@@ -151,13 +154,23 @@ export default function App() {
       const userRef = ref(db, `users/${user}/watchlist`);
 
       runTransaction(userRef, (currentData) => {
-        // If the currentData is null, initialize it as an empty array
         const data = currentData || [];
 
-        if (!data.includes(movieData[index])) {
+        const movieId = movieData[index].original_title;
+
+        const isAlreadyInWatchlist = data.some(
+          (movie) => movie.original_title === movieId
+        );
+
+        if (!isAlreadyInWatchlist) {
           data.push(movieData[index]);
-          alert(`Added ${movieData[index].original_title} to your watchlist!`);
+          setPopupMessage(
+            `Added ${movieData[index].original_title} to your watchlist!`
+          );
         } else {
+          setPopupMessage(
+            `${movieData[index].original_title} is already in your watchlist, YOU SHOULD PROBABLY WATCH IT!`
+          );
           console.log(
             `${movieData[index].original_title} is already in the watchlist.`
           );
@@ -228,7 +241,7 @@ export default function App() {
       return updatedData;
     })
       .then(() => {
-        alert(`Removed ${movie.original_title} from your watchlist!`);
+        setPopupMessage(`Removed ${movie.original_title} from your watchlist!`);
         console.log(`Removed ${movie.original_title} from the watchlist.`);
       })
       .catch((error) => {
@@ -309,6 +322,10 @@ export default function App() {
     }
   };
 
+  const handlePopupStatus = () => {
+    setPopupStatus(!popupStatus);
+  };
+
   return (
     // SIGN UP SCREEN AFTER PRESSING SIGN UP FROM MAIN PAGE
     <View style={styles.container}>
@@ -374,6 +391,7 @@ export default function App() {
           getMovieData={getMovieData}
           enterGetMovie={enterGetMovie}
           receiveGenre={receiveGenre}
+          popupMessage={popupMessage}
         />
       )}
 
@@ -399,6 +417,12 @@ export default function App() {
       {/* SHOWS THE WATCH LIST OF THE USER */}
       {showWatchlistStatus && watchlist?.length > 0 && (
         <View style={styles.watchlistContainer}>
+          {popupStatus && (
+            <Popup
+              popupMessage={popupMessage}
+              handlePopupStatus={handlePopupStatus}
+            />
+          )}
           <ScrollView style={styles.scrollContainer}>
             {watchlist.map((movie, index) => {
               // console.log("WATCHLIST", movie.original_title);
@@ -410,6 +434,8 @@ export default function App() {
                   movie={movie}
                   key={index}
                   deleteFromWatchlist={deleteFromWatchlist}
+                  popupMessage={popupMessage}
+                  handlePopupStatus={handlePopupStatus}
                 />
               );
             })}
