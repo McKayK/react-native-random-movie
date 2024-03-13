@@ -29,7 +29,7 @@ const WatchlistMovie = ({ movie, deleteFromWatchlist }) => {
     <View style={styles.container}>
       <FlipCard
         flip={isFlipped}
-        friction={3}
+        friction={2}
         perspective={1000}
         flipHorizontal={true}
         flipVertical={false}
