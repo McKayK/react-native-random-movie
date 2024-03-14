@@ -55,9 +55,11 @@ const MovieCard = ({
   const [movieIndex, setMovieIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [popupStatus, setPopupStatus] = useState(false);
+  const [netflix, setNetflix] = useState(false);
 
   useEffect(() => {
     if (movieData) {
+      // console.log(movieData[0]);
       setMovieIndex(Math.floor(Math.random() * movieData.length));
     }
   }, [movieData]);
@@ -88,6 +90,11 @@ const MovieCard = ({
     console.log("hit", ratedRSwitch);
   };
 
+  const toggleNetflixSwitch = () => {
+    console.log("hit toggle netflix");
+    setNetflix(!netflix);
+  };
+
   const handleCleardropdownAndX = () => {
     handleX();
     setDropdown("");
@@ -95,7 +102,7 @@ const MovieCard = ({
 
   const sendGenre = () => {
     console.log("DROPDOWN", dropdown);
-    receiveGenre(dropdown.itemValue, ratedRSwitch);
+    receiveGenre(dropdown.itemValue, netflix);
   };
 
   const handleSendGenreAndMovieData = () => {
@@ -159,6 +166,15 @@ const MovieCard = ({
               <Text style={styles.title}>
                 What genre are you in the mood for?
               </Text>
+
+              <Text>Netflix</Text>
+              <Switch
+                trackColor={{ false: "#767577", true: "#81b0ff" }}
+                thumbColor={ratedRSwitch ? "#f5dd4b" : "#f4f3f4"}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={toggleNetflixSwitch}
+                value={netflix}
+              />
             </View>
 
             <Text style={styles.genreTitle}>{dropdown.genre}</Text>

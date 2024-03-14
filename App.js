@@ -112,29 +112,30 @@ export default function App() {
       });
   };
 
-  const receiveGenre = (genre, rating) => {
-    console.log("receive", genre);
+  const receiveGenre = (genre, netflix) => {
+    // console.log("receive", genre);
     setGenre(genre);
-    getMovieData(genre, rating);
-    console.log(genre);
+    getMovieData(genre, netflix);
+    // console.log(genre);
   };
 
-  const getMovieData = (genre, rating) => {
+  const getMovieData = (genre, netflix) => {
     console.log("movie data genre", genre);
+    console.log("netflix", netflix);
     axios
       .get("http://192.168.1.22:3003/movie", {
         // .get("http://100.64.26.32:3003/movie", {
         params: {
           genre: genre,
-          rating: rating,
+          netflix: netflix,
         },
       })
       .then((res) => {
-        // console.log(res.data.results);
+        console.log("total pages", res.data.total_pages);
         // const foundProduct = res.data.release_dates.results.find(
         //   (movie) => movie.iso_3166_1 === "US"
         // );
-        console.log(rating);
+        // console.log(rating);
         // console.log(foundProduct.release_dates[0].certification);
         setMovieData(res.data.results);
         if (!movieStatus) {
