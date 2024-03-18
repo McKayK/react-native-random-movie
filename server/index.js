@@ -8,9 +8,10 @@ app.use(express.json());
 
 require("dotenv").config();
 
-const { getMovie } = require(`./controller`);
+const { getMovie, getMovieWithId } = require(`./controller`);
 
 app.get(`/movie`, getMovie);
+app.get(`/movieID`, getMovieWithId);
 
 const PORT = 3003;
 

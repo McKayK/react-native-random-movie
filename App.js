@@ -41,6 +41,7 @@ import Popup from "./components/Popup";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
+  const [movieDataWithId, setMovieDataWithId] = useState();
   const [movieStatus, setMovieStatus] = useState(false);
   const [loginStatus, setLoginStatus] = useState(false);
   const [signUpStatus, setSignUpStatus] = useState(false);
@@ -131,13 +132,38 @@ export default function App() {
         },
       })
       .then((res) => {
-        console.log("total pages", res.data.total_pages);
+        console.log("total pages", res.data.results[2]);
         // const foundProduct = res.data.release_dates.results.find(
         //   (movie) => movie.iso_3166_1 === "US"
         // );
         // console.log(rating);
         // console.log(foundProduct.release_dates[0].certification);
         setMovieData(res.data.results);
+        if (!movieStatus) {
+          setMovieStatus(true);
+        }
+      })
+      .catch((error) => console.log(error));
+  };
+  const getMovieDataWithId = (movieId) => {
+    axios
+      .get("http://192.168.1.22:3003/movieID", {
+        // .get("http://100.64.26.32:3003/movie", {
+        params: {
+          movieId: movieId,
+        },
+      })
+      .then((res) => {
+        console.log(
+          "HIT GET MOVIE WITH ID",
+          res.data["watch/providers"].results.US.flatrate
+        );
+        // const foundProduct = res.data.release_dates.results.find(
+        //   (movie) => movie.iso_3166_1 === "US"
+        // );
+        // console.log(rating);
+        // console.log(foundProduct.release_dates[0].certification);
+        setMovieDataWithId(res.data);
         if (!movieStatus) {
           setMovieStatus(true);
         }
@@ -386,10 +412,12 @@ export default function App() {
       {enterGetMovie && (
         <MovieCard
           movieData={movieData}
+          movieDataWithId={movieDataWithId}
           addToWatchlist={addToWatchlist}
           handleX={handleX}
           handleViewMovieCard={handleViewMovieCard}
           getMovieData={getMovieData}
+          getMovieDataWithId={getMovieDataWithId}
           enterGetMovie={enterGetMovie}
           receiveGenre={receiveGenre}
           popupMessage={popupMessage}

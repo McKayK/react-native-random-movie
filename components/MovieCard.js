@@ -19,10 +19,12 @@ import Popup from "./Popup";
 
 const MovieCard = ({
   movieData,
+  movieDataWithId,
   addToWatchlist,
   handleX,
   handleViewMovieCard,
   getMovieData,
+  getMovieDataWithId,
   enterGetMovie,
   receiveGenre,
   popupMessage,
@@ -56,6 +58,7 @@ const MovieCard = ({
   const [isFlipped, setIsFlipped] = useState(false);
   const [popupStatus, setPopupStatus] = useState(false);
   const [netflix, setNetflix] = useState(false);
+  const [movieHasStreaming, setMovieHasStreaming] = useState(false);
 
   useEffect(() => {
     if (movieData) {
@@ -63,6 +66,14 @@ const MovieCard = ({
       setMovieIndex(Math.floor(Math.random() * movieData.length));
     }
   }, [movieData]);
+
+  useEffect(() => {
+    if (movieDataWithId) {
+      if (movieDataWithId["watch/providers"].results.US.flatrate) {
+        setMovieHasStreaming(true);
+      }
+    }
+  }, [movieDataWithId]);
 
   useEffect(() => {
     if (swipeProcessedRight) {
@@ -122,6 +133,8 @@ const MovieCard = ({
   };
 
   const handleSwipeUp = () => {
+    // console.log(movieData[movieIndex].id);
+    getMovieDataWithId(movieData[movieIndex].id);
     setIsFlipped(!isFlipped);
   };
 
@@ -295,19 +308,62 @@ const MovieCard = ({
                 </View>
               </View>
               {/* Back Side */}
-              <View style={styles.descriptionContainer}>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  <Pressable>
-                    <Text
-                      style={styles.movieDescription}
-                      onPress={handleSwipeUp}
-                      suppressHighlighting={true}
-                    >
-                      {movieData[movieIndex].overview}
-                    </Text>
-                  </Pressable>
-                </ScrollView>
-              </View>
+              {movieDataWithId && (
+                <View style={styles.descriptionContainer}>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <Pressable>
+                      <Text
+                        style={styles.movieDescription}
+                        onPress={handleSwipeUp}
+                        suppressHighlighting={true}
+                      >
+                        {movieDataWithId.overview}
+                      </Text>
+                      {movieDataWithId["watch/providers"].results.US
+                        .flatrate && (
+                        <View style={styles.iconContainer}>
+                          <Text style={styles.title}>Streaming on: </Text>
+                          <View style={styles.iconRow}>
+                            {movieDataWithId[
+                              "watch/providers"
+                            ].results.US.flatrate.map((streaming) => {
+                              return (
+                                <Image
+                                  source={{
+                                    uri: `https://image.tmdb.org/t/p/original${streaming.logo_path}`,
+                                  }}
+                                  style={styles.icon}
+                                  key={
+                                    movieDataWithId["watch/providers"].results
+                                      .US.flatrate.provider_id
+                                  }
+                                />
+                              );
+                            })}
+                          </View>
+
+                          {/* <Image
+                            source={{
+                              uri: `https://image.tmdb.org/t/p/original${movieDataWithId["watch/providers"].results.US.flatrate[0].logo_path}`,
+                            }}
+                            style={styles.icon}
+                          /> */}
+                        </View>
+                        // <Text style={styles.title}>
+                        //   Streaming on:
+                        //   {` ${movieDataWithId["watch/providers"].results.US.flatrate[0].provider_name}`}
+                        // </Text>
+                      )}
+                      {!movieDataWithId["watch/providers"].results.US
+                        .flatrate && (
+                        <Text style={styles.title}>
+                          Not Currently Streaming
+                        </Text>
+                      )}
+                    </Pressable>
+                  </ScrollView>
+                </View>
+              )}
             </FlipCard>
           </View>
           <Text style={styles.title}>
@@ -368,6 +424,19 @@ const styles = StyleSheet.create({
   buttonContainer: {
     position: "absolute",
     bottom: 50,
+  },
+  iconContainer: {
+    marginBottom: 20,
+  },
+  iconRow: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+  },
+  icon: {
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
   },
   button: {
     backgroundColor: "#009572",

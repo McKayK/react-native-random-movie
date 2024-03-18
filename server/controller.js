@@ -89,6 +89,20 @@ module.exports = {
         .catch((err) => console.log(err));
     }
   },
+  getMovieWithId: (req, res) => {
+    // console.log(req.query.movieId, "from controller");
+    const movieId = req.query.movieId;
+    axios
+      .get(
+        `https://api.themoviedb.org/3/movie/${movieId}?api_key=e03f559d7536a0d2b96e367744ab9bf8&append_to_response=videos,watch/providers`
+      )
+      .then((dbres) => {
+        // console.log(dbres.data["watch/providers"].results.US.flatrate);
+        res.status(200).send(dbres.data);
+      })
+
+      .catch((err) => console.log(err));
+  },
 };
 //     if (rating === true) {
 //       axios
