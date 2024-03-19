@@ -16,6 +16,7 @@ import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 import FlipCard from "react-native-flip-card";
 import Popup from "./Popup";
+import YoutubePlayer from "react-native-youtube-iframe";
 
 const MovieCard = ({
   movieData,
@@ -59,6 +60,7 @@ const MovieCard = ({
   const [popupStatus, setPopupStatus] = useState(false);
   const [netflix, setNetflix] = useState(false);
   const [movieHasStreaming, setMovieHasStreaming] = useState(false);
+  const [trailerId, setTrailerId] = useState();
 
   useEffect(() => {
     if (movieData) {
@@ -69,6 +71,18 @@ const MovieCard = ({
 
   useEffect(() => {
     if (movieDataWithId) {
+      if (
+        movieDataWithId.videos.results.filter(
+          (trailer) => trailer.type === "Trailer"
+        )[0].key
+      ) {
+        setTrailerId(
+          movieDataWithId.videos.results.filter(
+            (trailer) => trailer.type === "Trailer"
+          )[0].key
+        );
+      }
+
       if (movieDataWithId["watch/providers"].results.US.flatrate) {
         setMovieHasStreaming(true);
       }
@@ -237,7 +251,7 @@ const MovieCard = ({
                   <Picker.Item
                     label={option.label}
                     value={option.number}
-                    key={index}
+                    key={option.number}
                     color="white"
                   />
                 );
@@ -326,33 +340,30 @@ const MovieCard = ({
                           <View style={styles.iconRow}>
                             {movieDataWithId[
                               "watch/providers"
-                            ].results.US.flatrate.map((streaming) => {
+                            ].results.US.flatrate.map((streaming, index) => {
                               return (
                                 <Image
                                   source={{
                                     uri: `https://image.tmdb.org/t/p/original${streaming.logo_path}`,
                                   }}
                                   style={styles.icon}
-                                  key={
-                                    movieDataWithId["watch/providers"].results
-                                      .US.flatrate.provider_id
-                                  }
+                                  key={`${streaming.logo_path}_${index}`}
                                 />
                               );
                             })}
                           </View>
-
-                          {/* <Image
-                            source={{
-                              uri: `https://image.tmdb.org/t/p/original${movieDataWithId["watch/providers"].results.US.flatrate[0].logo_path}`,
-                            }}
-                            style={styles.icon}
-                          /> */}
+                          <Text style={styles.popularity}>
+                            {movieDataWithId.vote_average.toFixed(1)}
+                            /10
+                          </Text>
+                          <View style={styles.youtubeContainer}>
+                            <YoutubePlayer
+                              height={300}
+                              videoId={trailerId}
+                              // webViewStyle={{ borderRadius: 20 }}
+                            />
+                          </View>
                         </View>
-                        // <Text style={styles.title}>
-                        //   Streaming on:
-                        //   {` ${movieDataWithId["watch/providers"].results.US.flatrate[0].provider_name}`}
-                        // </Text>
                       )}
                       {!movieDataWithId["watch/providers"].results.US
                         .flatrate && (
@@ -427,6 +438,13 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 20,
+    marginTop: 20,
+  },
+  youtubeContainer: {
+    borderRadius: 20,
+    overflow: "hidden",
+    aspectRatio: 16 / 9,
+    width: "100%",
   },
   iconRow: {
     flexDirection: "row",
@@ -434,8 +452,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   icon: {
-    width: 50,
-    height: 50,
+    width: 75,
+    height: 75,
+    borderRadius: 15,
     resizeMode: "contain",
   },
   button: {
@@ -470,6 +489,14 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
+    color: "#009572",
+  },
+  popularity: {
+    fontSize: 50,
+    fontWeight: "bold",
+    marginBottom: 10,
+    marginTop: 10,
     textAlign: "center",
     color: "#009572",
   },

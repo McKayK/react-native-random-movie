@@ -97,7 +97,7 @@ module.exports = {
         `https://api.themoviedb.org/3/movie/${movieId}?api_key=e03f559d7536a0d2b96e367744ab9bf8&append_to_response=videos,watch/providers`
       )
       .then((dbres) => {
-        // console.log(dbres.data["watch/providers"].results.US.flatrate);
+        console.log("popularity", dbres.data.popularity, dbres.data);
         res.status(200).send(dbres.data);
       })
 

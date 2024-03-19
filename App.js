@@ -154,10 +154,12 @@ export default function App() {
         },
       })
       .then((res) => {
-        console.log(
-          "HIT GET MOVIE WITH ID",
-          res.data["watch/providers"].results.US.flatrate
+        const trailer = res.data.videos.results;
+        const trailer2 = trailer.filter(
+          (trailer) => trailer.type === "Trailer"
         );
+
+        // console.log("HIT GET MOVIE WITH ID", trailer2[0]);
         // const foundProduct = res.data.release_dates.results.find(
         //   (movie) => movie.iso_3166_1 === "US"
         // );
