@@ -11,12 +11,15 @@ import {
   PanResponder,
   Pressable,
   ScrollView,
+  FlatList,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 import FlipCard from "react-native-flip-card";
 import Popup from "./Popup";
 import YoutubePlayer from "react-native-youtube-iframe";
+import CastDetails from "./CastDetails";
 
 const MovieCard = ({
   movieData,
@@ -61,6 +64,8 @@ const MovieCard = ({
   const [netflix, setNetflix] = useState(false);
   const [movieHasStreaming, setMovieHasStreaming] = useState(false);
   const [trailerId, setTrailerId] = useState();
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [cast, setCast] = useState();
 
   useEffect(() => {
     if (movieData) {
@@ -71,6 +76,10 @@ const MovieCard = ({
 
   useEffect(() => {
     if (movieDataWithId) {
+      const tempCast = movieDataWithId.credits.cast.filter(
+        (actor) => actor.known_for_department === "Acting"
+      );
+      setCast(tempCast);
       if (
         movieDataWithId.videos.results.filter(
           (trailer) => trailer.type === "Trailer"
@@ -154,6 +163,10 @@ const MovieCard = ({
 
   const handlePopupStatus = () => {
     setPopupStatus(!popupStatus);
+  };
+
+  const toggleDescriptionExpansion = () => {
+    setIsDescriptionExpanded(!isDescriptionExpanded);
   };
 
   const swipeResponder = useRef(
@@ -293,26 +306,21 @@ const MovieCard = ({
           >
             <Text style={styles.backButtonText}>⇦</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSendGenreAndMovieData}
-          >
-            <Text style={styles.buttonText}>Get Another</Text>
-          </TouchableOpacity>
-          <View style={{ flex: 0, height: 525, marginBottom: 20 }}>
+          <Text style={styles.title}>
+            {movieData[movieIndex].original_title}
+          </Text>
+          <View style={{ flex: 0, height: 525, width: 400, marginBottom: 20 }}>
             <FlipCard
               flip={isFlipped}
               friction={2}
               perspective={1000}
               flipHorizontal={false}
               flipVertical={true}
+              {...swipeResponder.panHandlers}
             >
               {/* Face Side */}
               <View style={styles.face}>
-                <View
-                  style={styles.imageContainer}
-                  {...swipeResponder.panHandlers}
-                >
+                <View style={styles.imageContainer}>
                   <Image
                     source={{
                       uri: `https://image.tmdb.org/t/p/original${movieData[movieIndex].poster_path}`,
@@ -324,14 +332,54 @@ const MovieCard = ({
               {/* Back Side */}
               {movieDataWithId && (
                 <View style={styles.descriptionContainer}>
-                  <ScrollView showsVerticalScrollIndicator={false}>
-                    <Pressable>
-                      <Text
-                        style={styles.movieDescription}
-                        onPress={handleSwipeUp}
-                        suppressHighlighting={true}
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                  >
+                    <Pressable onPress={handleSwipeUp}>
+                      <TouchableOpacity
+                        onPress={toggleDescriptionExpansion}
+                        activeOpacity={0.8}
                       >
-                        {movieDataWithId.overview}
+                        <Text style={styles.movieDescription}>
+                          {isDescriptionExpanded
+                            ? movieDataWithId.overview
+                            : `${movieDataWithId.overview.substring(
+                                0,
+                                150
+                              )}...⇨`}
+                        </Text>
+                      </TouchableOpacity>
+                      {cast && (
+                        <View style={styles.actorContainer}>
+                          <ScrollView
+                            nestedScrollEnabled
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                          >
+                            {cast.slice(0, 10).map((actor, index) => {
+                              return (
+                                <View key={`${actor.id}_${index}`}>
+                                  <Pressable>
+                                    <Image
+                                      source={{
+                                        uri: `https://image.tmdb.org/t/p/original${actor.profile_path}`,
+                                      }}
+                                      style={styles.actor}
+                                    />
+                                  </Pressable>
+                                  <Text style={styles.actorName}>
+                                    {actor.name}
+                                  </Text>
+                                </View>
+                              );
+                            })}
+                          </ScrollView>
+                        </View>
+                      )}
+                      <Text style={styles.popularity}>
+                        {movieDataWithId.vote_average.toFixed(1)}
+                        /10
                       </Text>
                       {movieDataWithId["watch/providers"].results.US
                         .flatrate && (
@@ -352,38 +400,29 @@ const MovieCard = ({
                               );
                             })}
                           </View>
-                          <Text style={styles.popularity}>
-                            {movieDataWithId.vote_average.toFixed(1)}
-                            /10
-                          </Text>
-                          <View style={styles.youtubeContainer}>
-                            <YoutubePlayer
-                              height={300}
-                              videoId={trailerId}
-                              // webViewStyle={{ borderRadius: 20 }}
-                            />
-                          </View>
                         </View>
                       )}
+
                       {!movieDataWithId["watch/providers"].results.US
                         .flatrate && (
                         <Text style={styles.title}>
                           Not Currently Streaming
                         </Text>
                       )}
+
+                      <View style={styles.youtubeContainer}>
+                        <YoutubePlayer
+                          height={300}
+                          videoId={trailerId}
+                          // webViewStyle={{ borderRadius: 20 }}
+                        />
+                      </View>
                     </Pressable>
                   </ScrollView>
                 </View>
               )}
             </FlipCard>
           </View>
-          <Text style={styles.title}>
-            {movieData[movieIndex].original_title}
-          </Text>
-          <View
-            style={styles.imageContainer}
-            {...swipeResponder.panHandlers}
-          ></View>
 
           {popupStatus && (
             <Popup
@@ -391,18 +430,25 @@ const MovieCard = ({
               handlePopupStatus={handlePopupStatus}
             />
           )}
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              addToWatchlist(movieIndex);
-              handlePopupStatus();
-            }}
-          >
-            <Text style={styles.buttonText}>Add To Watchlist</Text>
-          </TouchableOpacity>
         </View>
       )}
+      <View style={styles.anotherAndAddToWatchContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSendGenreAndMovieData}
+        >
+          <Text style={styles.buttonText}>Get Another</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => {
+            addToWatchlist(movieIndex);
+            handlePopupStatus();
+          }}
+        >
+          <Text style={styles.buttonText}>Add To Watchlist</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -425,8 +471,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,
-    width: 350,
-    height: 525,
+    width: 400,
+    height: 600,
   },
   questionContainer: {
     position: "absolute",
@@ -446,6 +492,33 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     width: "100%",
   },
+  anotherAndAddToWatchContainer: {
+    marginBottom: 50,
+  },
+  actorContainer: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "row",
+    marginTop: 20,
+    flexGrow: 0,
+    width: 400,
+    height: 140,
+    justifyContent: "center",
+  },
+  actor: {
+    width: 75,
+    height: 112.5,
+    marginRight: 10,
+    borderRadius: 10,
+  },
+  actorName: {
+    fontSize: 15,
+    fontWeight: "bold",
+    marginBottom: 10,
+    width: 75,
+    textAlign: "center",
+    color: "#009572",
+  },
   iconRow: {
     flexDirection: "row",
     justifyContent: "space-evenly",
@@ -462,9 +535,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 50,
     justifyContent: "center",
-    paddingHorizontal: 30,
+    // paddingHorizontal: 30,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 10,
     width: (screenWidth * buttonWidthPercentage) / 100,
     elevation: 3,
     shadowColor: "#10495C",
@@ -486,7 +559,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   title: {
-    fontSize: 50,
+    fontSize: 40,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
@@ -524,8 +597,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   moviePoster: {
-    width: 350,
-    height: 525,
+    width: 400,
+    height: 600,
     resizeMode: "contain",
     marginBottom: 10,
     borderRadius: 10,
