@@ -13,6 +13,7 @@ import {
   ScrollView,
   FlatList,
   TouchableWithoutFeedback,
+  Animated,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
@@ -20,6 +21,7 @@ import FlipCard from "react-native-flip-card";
 import Popup from "./Popup";
 import YoutubePlayer from "react-native-youtube-iframe";
 import CastDetails from "./CastDetails";
+import { register } from "react-native-app-auth";
 
 const MovieCard = ({
   movieData,
@@ -100,12 +102,10 @@ const MovieCard = ({
 
   useEffect(() => {
     if (swipeProcessedRight) {
-      // sendGenre();
       handleSwipeRight();
       setSwipeProcessedRight(false);
     }
     if (swipeProcessedLeft) {
-      // addToWatchlist();
       handleSwipeLeft();
       setSwipeProcessedLeft(false);
     }
@@ -113,6 +113,13 @@ const MovieCard = ({
       handleSwipeUp();
       setSwipeProcessedUp(false);
     }
+
+    // Reset the animated value after swipe
+    Animated.timing(imagePositionX, {
+      toValue: 0,
+      duration: 0, // Reset immediately
+      useNativeDriver: false,
+    }).start();
   }, [dropdown, swipeProcessedRight, swipeProcessedLeft, swipeProcessedUp]);
 
   const toggleRatedR = () => {
@@ -145,13 +152,29 @@ const MovieCard = ({
 
   const handleSwipeRight = () => {
     if (movieIndex >= 1) {
-      setMovieIndex(() => movieIndex - 1);
+      Animated.timing(imagePositionX, {
+        toValue: -screenWidth,
+        duration: 300, // Adjust duration as needed
+        useNativeDriver: false,
+      }).start(() => {
+        setMovieIndex(movieIndex - 1);
+        // Reset image position after animation completes
+        imagePositionX.setValue(0);
+      });
     }
   };
 
   const handleSwipeLeft = () => {
     if (movieIndex < movieData.length - 1) {
-      setMovieIndex(() => movieIndex + 1);
+      Animated.timing(imagePositionX, {
+        toValue: screenWidth,
+        duration: 300, // Adjust duration as needed
+        useNativeDriver: false,
+      }).start(() => {
+        setMovieIndex(movieIndex + 1);
+        // Reset image position after animation completes
+        imagePositionX.setValue(0);
+      });
     }
   };
 
@@ -169,23 +192,45 @@ const MovieCard = ({
     setIsDescriptionExpanded(!isDescriptionExpanded);
   };
 
+  const imagePositionX = useRef(new Animated.Value(0)).current;
+
+  const handleSwipe = (gestureState) => {
+    if (gestureState.dx > 50) {
+      Animated.timing(imagePositionX, {
+        toValue: screenWidth,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => {
+        setSwipeProcessedRight(true);
+      });
+    } else if (gestureState.dx < -50) {
+      Animated.timing(imagePositionX, {
+        toValue: -screenWidth,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => {
+        setSwipeProcessedLeft(true);
+      });
+    } else if (gestureState.dy < -50) {
+      setSwipeProcessedUp(true);
+    }
+  };
+
   const swipeResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: Animated.event([null, { dx: imagePositionX }], {
+        useNativeDriver: false,
+      }),
       onPanResponderEnd: (event, gestureState) => {
-        if (gestureState.dx > 50) {
-          console.log("right");
-          setSwipeProcessedRight(true);
-        } else if (gestureState.dx < -50) {
-          console.log("left");
-          setSwipeProcessedLeft(true);
-          // addToWatchlist();
-        } else if (gestureState.dy < -50) {
-          setSwipeProcessedUp(true);
-        }
+        handleSwipe(gestureState);
       },
     })
   ).current;
+
+  const animatedImageStyle = {
+    transform: [{ translateX: imagePositionX }],
+  };
 
   return (
     <View style={styles.container}>
@@ -320,14 +365,16 @@ const MovieCard = ({
             >
               {/* Face Side */}
               <View style={styles.face}>
-                <View style={styles.imageContainer}>
+                <Animated.View
+                  style={[styles.imageContainer, animatedImageStyle]}
+                >
                   <Image
                     source={{
                       uri: `https://image.tmdb.org/t/p/original${movieData[movieIndex].poster_path}`,
                     }}
                     style={styles.moviePoster}
                   />
-                </View>
+                </Animated.View>
               </View>
               {/* Back Side */}
               {movieDataWithId && (
@@ -352,6 +399,7 @@ const MovieCard = ({
                       </TouchableOpacity>
                       {cast && (
                         <View style={styles.actorContainer}>
+                          <Text style={styles.castTitle}>Top Cast</Text>
                           <ScrollView
                             nestedScrollEnabled
                             horizontal
@@ -430,25 +478,25 @@ const MovieCard = ({
               handlePopupStatus={handlePopupStatus}
             />
           )}
+          <View style={styles.anotherAndAddToWatchContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSendGenreAndMovieData}
+            >
+              <Text style={styles.buttonText}>Get Another</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                addToWatchlist(movieIndex);
+                handlePopupStatus();
+              }}
+            >
+              <Text style={styles.buttonText}>Add To Watchlist</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-      <View style={styles.anotherAndAddToWatchContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleSendGenreAndMovieData}
-        >
-          <Text style={styles.buttonText}>Get Another</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            addToWatchlist(movieIndex);
-            handlePopupStatus();
-          }}
-        >
-          <Text style={styles.buttonText}>Add To Watchlist</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -467,7 +515,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   descriptionContainer: {
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "#383838",
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,
@@ -493,17 +541,24 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   anotherAndAddToWatchContainer: {
-    marginBottom: 50,
+    // display: "flex",
+    flexDirection: "row",
+    marginTop: 80,
+    justifyContent: "space-evenly",
+    width: "100%",
   },
   actorContainer: {
     flex: 1,
     display: "flex",
-    flexDirection: "row",
     marginTop: 20,
     flexGrow: 0,
-    width: 400,
-    height: 140,
+    width: "100%",
+    height: 200,
     justifyContent: "center",
+    backgroundColor: "#232323",
+    borderRadius: 10,
+    alignItems: "center",
+    padding: 10,
   },
   actor: {
     width: 75,
@@ -514,7 +569,6 @@ const styles = StyleSheet.create({
   actorName: {
     fontSize: 15,
     fontWeight: "bold",
-    marginBottom: 10,
     width: 75,
     textAlign: "center",
     color: "#009572",
@@ -538,7 +592,7 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 30,
     alignItems: "center",
     marginBottom: 10,
-    width: (screenWidth * buttonWidthPercentage) / 100,
+    width: (screenWidth * 43) / 100,
     elevation: 3,
     shadowColor: "#10495C",
     shadowOffset: {
@@ -547,6 +601,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 3.84,
+    // marginRight: 10,
   },
   buttonText: {
     color: "white",
@@ -564,6 +619,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
     color: "#009572",
+    marginTop: 5,
+  },
+  castTitle: {
+    fontSize: 40,
+    fontWeight: "bold",
+    marginTop: -10,
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#009572",
+    textDecorationLine: "underline",
   },
   popularity: {
     fontSize: 50,

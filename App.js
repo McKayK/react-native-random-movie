@@ -494,7 +494,7 @@ const buttonWidthPercentage = 80;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#292929",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
