@@ -38,12 +38,14 @@ import {
 import Watchlist from "./components/Watchlist";
 import WatchlistMovie from "./components/WatchlistMovie";
 import Popup from "./components/Popup";
+import About from "./components/About";
 
 export default function App() {
   const [movieData, setMovieData] = useState();
   const [movieDataWithId, setMovieDataWithId] = useState();
   const [movieStatus, setMovieStatus] = useState(false);
   const [loginStatus, setLoginStatus] = useState(false);
+  const [aboutStatus, setAboutStatus] = useState(false);
   const [signUpStatus, setSignUpStatus] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [watchlist, setWatchlist] = useState();
@@ -314,12 +316,20 @@ export default function App() {
     setLoginStatus(true);
   };
 
+  const handleAboutStatusChange = () => {
+    setAboutStatus(true);
+  };
+
   const handleBackSignUp = () => {
     setSignUpStatus(false);
   };
 
   const handleBackLogin = () => {
     setLoginStatus(false);
+  };
+
+  const handleBackAbout = () => {
+    setAboutStatus(false);
   };
 
   const handleLogout = () => {
@@ -377,20 +387,40 @@ export default function App() {
         </View>
       )}
 
-      {/* LOGIN, SIGN UP SCREEN */}
-      {!loginStatus && !signUpStatus && !visible && !isLoggedIn && (
-        <View style={styles.container}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLoginStatusChange}
-          >
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleSignUpChange}>
-            <Text style={styles.buttonText}>Sign Up</Text>
-          </TouchableOpacity>
+      {/* ABOUT SECTION WITH ATTRIBUTION TO TMDB */}
+      {aboutStatus && !loginStatus && !signUpStatus && (
+        <View>
+          <About handleBackAbout={handleBackAbout} />
         </View>
       )}
+
+      {/* LOGIN, SIGN UP SCREEN */}
+      {!loginStatus &&
+        !signUpStatus &&
+        !visible &&
+        !isLoggedIn &&
+        !aboutStatus && (
+          <View style={styles.container}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleLoginStatusChange}
+            >
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSignUpChange}
+            >
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleAboutStatusChange}
+            >
+              <Text style={styles.buttonText}>About</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       {/* OPENING ANIMATION */}
       {visible && (
